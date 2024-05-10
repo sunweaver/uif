@@ -559,18 +559,30 @@ sub validateData {
 				}
 				$$rule{'Action'}='MASQUERADE';
 			} elsif ($type =~ /^(s|d|)nat$/) {
-				if (exists($$rule{'TranslatedSource'})) {
-					$$rule{'Type'}='POSTROUTING';
-					$$rule{'Action'}='SNAT';
-				} elsif (exists($$rule{'TranslatedDestination'})) {
-					$$rule{'Type'}='PREROUTING';
-					$$rule{'Action'}='DNAT';
-				} else {
-					die "nat rule without address translation makes no sense:\n$$rule{'Rule'}\n";
+				if ($action eq '+') {
+					if (exists($$rule{'TranslatedSource'})) {
+						$$rule{'Type'}='POSTROUTING';
+						$$rule{'Action'}='SNAT';
+					} elsif (exists($$rule{'TranslatedDestination'})) {
+						$$rule{'Type'}='PREROUTING';
+						$$rule{'Action'}='DNAT';
+					} else {
+						die "nat rule without address translation makes no sense:\n$$rule{'Rule'}\n";
+					}
 				}
-			}
-			if ($action eq '-') {
-				$$rule{'Action'}='DROP';
+				else {
+					# This looks counter-intuitive. It is not, though.
+					# Remember:
+					# nat+ -> do the NAT -> iptables action: MASQUERADE
+					# nat- -> don't NAT, do connect directly -> iptables action: ACCEPT
+					$$rule{'Action'}='ACCEPT';
+					if ($type =~ /^snat$/) {
+						$$rule{'Type'}='POSTROUTING';
+					}
+					elsif ($type =~ /^dnat$/) {
+						$$rule{'Type'}='PREROUTING';
+					}
+				}
 			}
 		} elsif ($ruletype =~ /^\s*(in|out|fw|slin|slout|slfw)(\+|-|\||>|{\w+})$/) {
 			my $type = $1;
