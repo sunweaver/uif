@@ -539,7 +539,7 @@ sub validateData {
 		$$Marker{$key} = resolveHashentries($$Marker{$key}, $Marker);
 	}
 
-## marken auf plausibilität prüfen
+	# check markers for plausibility
 
 	my $rule;
 	foreach $rule (@$Rules) {
@@ -928,7 +928,7 @@ sub validateData {
 					my %icmphash;
 					my $message;
 					foreach $message (split (/\s+/, $protocols{"${serviceprefix}icmp"})) {
-# message validation missing
+						# message validation missing
 						$message eq '' && next;
 						$icmphash{$message}=1;
 					}
@@ -943,7 +943,7 @@ sub validateData {
 					my %icmp6hash;
 					my $message;
 					foreach $message (split (/\s+/, $protocols{"${serviceprefix}ipv6-icmp"})) {
-# message validation missing
+						# message validation missing
 						$message eq '' && next;
 						$icmp6hash{$message}=1;
 					}
@@ -1279,6 +1279,7 @@ sub genRuleDump_NFT {
 				push (@destination, "$not $inet daddr $1");
 			}
 		}
+
 		if (exists($$rule{'TranslatedSource'})) {
 			my $source;
 			$source=${$$rule{'TranslatedSource'}}[0];
