@@ -1081,6 +1081,7 @@ sub genRuleDump_NFT {
 	my $table;
 	my $chains;
 	my $inet;
+	my $this_inet;
 
 	if ($ipv6) {
 		$inet = "ip6";
@@ -1111,17 +1112,20 @@ sub genRuleDump_NFT {
 		if ($$rule{'Table'} eq 'filter') {
 			$table=\@filter;
 			$chains=\%filter;
+			$this_inet=$inet;
 		} elsif ($$rule{'Table'} eq 'nat') {
 			$table=\@nat;
 			$chains=\%nat;
+			$this_inet='';
 		} elsif ($$rule{'Table'} eq 'mangle') {
 			$table=\@mangle;
 			$chains=\%mangle;
+			$this_inet=$inet;
 		} else {
 			die "$$rule{'Table'} is not implemented!\n";
 		}
 
-		$type="add rule $inet $$rule{'Table'} $$rule{'Type'}";
+		$type="add rule $this_inet $$rule{'Table'} $$rule{'Type'}";
 		if (exists($$rule{'Name'})) {
 			$name=$$rule{'Name'};
 			$name=~s/\s+//g;
@@ -1363,21 +1367,21 @@ sub genRuleDump_NFT {
 			} else {
 				$logid=$name;
 			}
-			push (@$table, "add rule $inet $$rule{'Table'} CHAIN_$chain limit rate $$Sysconfig{'LogLimit'} burst $$Sysconfig{'LogBurst'} packets counter log prefix \"$$Sysconfig{'LogPrefix'} $logaction ($logid): \" level $$Sysconfig{'LogLevel'} flags tcp options flags ip options");
-			push (@$table, "add rule $inet $$rule{'Table'} CHAIN_$chain $action");
+			push (@$table, "add rule $this_inet $$rule{'Table'} CHAIN_$chain limit rate $$Sysconfig{'LogLimit'} burst $$Sysconfig{'LogBurst'} packets counter log prefix \"$$Sysconfig{'LogPrefix'} $logaction ($logid): \" level $$Sysconfig{'LogLevel'} flags tcp options flags ip options");
+			push (@$table, "add rule $this_inet $$rule{'Table'} CHAIN_$chain $action");
 			$action="counter jump CHAIN_$chain";
 		}
 		if (exists($$rule{'Accounting'})) {
 			my $accountchain="$$Sysconfig{'AccountPrefix'}$$rule{'Accounting'}";
 			unless (exists($$chains{"$accountchain"})) {
 				$$chains{"$accountchain"}=1;
-				push (@$table, "add rule $inet $$rule{'Table'} CHAIN_$accountchain $action");
+				push (@$table, "add rule $this_inet $$rule{'Table'} CHAIN_$accountchain $action");
 			}
 			my $accountrules="${id}_ACCOUNTING_$$rule{'Accounting'}";
 			$$chains{$accountrules}=1;
 			push (@$table, "$type counter jump $accountrules");
-			push (@$table, "add rule $inet $$rule{'Table'} ACCOUNTING$$rule{'Type'} counter jump CHAIN_$accountrules");
-			$type="add rule $inet $$rule{'Table'} $accountrules ";
+			push (@$table, "add rule $this_inet $$rule{'Table'} ACCOUNTING$$rule{'Type'} counter jump CHAIN_$accountrules");
+			$type="add rule $this_inet $$rule{'Table'} $accountrules ";
 			$action=" counter jump CHAIN_$accountchain";
 		}
 		if (exists($$rule{'Limit'})) {
@@ -1436,7 +1440,7 @@ sub genRuleDump_NFT {
 				push (@$table, "$type $jumpto");
 			}
 			if ($again) {
-				$type="add rule $inet $$rule{'Table'} CHAIN_${id}_$level";
+				$type="add rule $this_inet $$rule{'Table'} CHAIN_${id}_$level";
 				$$chains{"${id}_$level"}=1;
 				$level++;
 			}
@@ -1449,11 +1453,13 @@ sub genRuleDump_NFT {
 	my $entry;
 	foreach $entry (qw(mangle filter nat)) {
 		if ($entry eq "nat" && $ipv6 == 1) {next};
+
 		my $chain;
-		push (@$Listing, "add table $inet $entry");
 		if ($entry eq 'filter') {
 			$table=\@filter;
 			$chains=\%filter;
+			$this_inet=$inet;
+			push (@$Listing, "add table $inet filter");
 			push (@$Listing, "add chain $inet filter MYREJECT");
 			push (@$Listing, "add chain $inet filter STATENOTNEW");
 			foreach (qw(INPUT OUTPUT FORWARD)) {
@@ -1480,17 +1486,21 @@ sub genRuleDump_NFT {
 		} elsif ($entry eq 'nat') {
 			$table=\@nat;
 			$chains=\%nat;
-			push (@$Listing, "add chain $inet nat POSTROUTING { type nat hook postrouting priority srcnat; policy accept; }");
-			push (@$Listing, "add chain $inet nat PREROUTING  { type nat hook prerouting  priority dstnat; policy accept; }");
-			push (@$Listing, "add chain $inet nat OUTPUT      { type nat hook output      priority -100; policy accept; }");
+			$this_inet='';
+			push (@$Listing, "add table nat");
+			push (@$Listing, "add chain nat POSTROUTING { type nat hook postrouting priority srcnat; policy accept; }");
+			push (@$Listing, "add chain nat PREROUTING  { type nat hook prerouting  priority dstnat; policy accept; }");
+			push (@$Listing, "add chain nat OUTPUT      { type nat hook output      priority -100; policy accept; }");
 		} else {
 			$table=\@mangle;
 			$chains=\%mangle;
+			$this_inet=$inet;
+			push (@$Listing, "add table $inet mangle");
 			push (@$Listing, "add chain $inet mangle PREROUTING { type filter hook prerouting priority mangle; policy accept; }");
 			push (@$Listing, "add chain $inet mangle OUTPUT { type route hook output priority mangle; policy accept; }");
 		}
 		foreach (keys(%$chains)) {
-			push (@$Listing, "add chain $inet $entry CHAIN_$_");
+			push (@$Listing, "add chain $this_inet $entry CHAIN_$_");
 		}
 		push (@$Listing, "#");
 		push (@$Listing, "# beginning of user generated $entry rules");
