@@ -145,7 +145,10 @@ mode. They simply get ignored as NAT and Masquerading are not supported by
 the IPv6 protocol.
 .PP
 The plus and minus signs specify the type of the rule: '+' accepts matching
-packets and '\-' drops them. As a special case the identifier out and fw
+packets and '\-' drops them.
+For \fInat\fR identifiers, \fInat-\fR means that packets matching the
+rule will not be NAT'ed, but delivered directly (NAT exceptions).
+As a special case the identifier out and fw
 accept the greater than (>) sign to modify the MSS depending on the PMTU
 (see
 .BR iptables (8)).
@@ -193,7 +196,7 @@ The the new destination address in nat rules. Supported in IPv4 mode only. Ignor
 .TP
 \fIP\fR
 The the new service description in nat rules. This is only valid with tcp or
-udp packets.
+udp packets. It also requires a protocol to be defined via \fIp=\fR (see above).
 .TP
 \fIf\fR
 This parameter sets some 'flags'. A flag definition starts with the flag
