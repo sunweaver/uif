@@ -1490,7 +1490,7 @@ sub genRuleDump_NFT {
 			push (@$Listing, "add chain $inet mangle OUTPUT { type route hook output priority mangle; policy accept; }");
 		}
 		foreach (keys(%$chains)) {
-			push (@$Listing, "add chain $inet filter CHAIN_$_");
+			push (@$Listing, "add chain $inet $entry CHAIN_$_");
 		}
 		push (@$Listing, "#");
 		push (@$Listing, "# beginning of user generated $entry rules");
