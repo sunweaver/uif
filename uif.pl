@@ -963,8 +963,14 @@ sub validateData {
 			}
 		}
 		if (	(exists($$rule{'TranslatedTcp'}) && exists($$rule{'Udp'})) ||
-			(exists($$rule{'TranslatedUdp'}) && exists($$rule{'Tcp'}))) {
+			(exists($$rule{'TranslatedUdp'}) && exists($$rule{'Tcp'}))
+		) {
 			die "source protocol and translated protocol must be equal in nat rule:\n$$rule{'Rule'}\n";
+		}
+		if (	(exists($$rule{'TranslatedTcp'}) && (!exists($$rule{'Tcp'}))) ||
+			(exists($$rule{'TranslatedUdp'}) && (!exists($$rule{'Udp'})))
+		) {
+			die "translated protocol given, but no source protocol defined in nat rule:\n$$rule{'Rule'}\n";
 		}
 		if (exists($$rule{'Flags'})) {
 			my $flag;
