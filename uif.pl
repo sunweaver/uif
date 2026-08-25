@@ -1324,6 +1324,10 @@ sub genRuleDump_NFT {
 				if (defined($$ref[3][0])) {
 					$action.=":$$ref[3][0]";
 				}
+				if ((defined($$ref[1][0]) || defined($$ref[3][0])) && !exists($$rule{"\u$proto"})) {
+					push (@protocol, "meta l4proto $proto");
+				}
+
 				last;
 			}
 		}
